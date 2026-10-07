@@ -75,7 +75,7 @@ class UploadJob {
                         Report("Uploading track ${number}/${tracks.Count}", float64(n) / float64(Math.Max(1L, size)) * float64(track.Segment.AudioBytes), number)
                     })
                     upload = await client.UploadAudioFileAsync(temp, "audio/mp4", sent, cancellationToken)
-                    state.Tracks[track.Key] = upload!!
+                    state.Tracks[track.Key] = upload
                     await states.SaveAsync(state)
                 } finally {
                     if File.Exists(temp) {

@@ -1,0 +1,121 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Nerdbank.GitVersioning needs full history
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build
+        run: dotnet build Waikiki.slnx -c Release
+
+      - name: Test
+        run: dotnet test Waikiki.slnx -c Release --no-build
+
+  package:
+    name: Package ${{ matrix.label }}
+    needs: test
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { label: macOS-arm64, runner: macos-latest,   rid: osx-arm64,   kind: macos }
+          - { label: macOS-x64,   runner: macos-latest,   rid: osx-x64,     kind: macos }
+          - { label: Windows-x64, runner: windows-latest, rid: win-x64,     kind: windows }
+          - { label: Windows-arm64, runner: windows-latest, rid: win-arm64, kind: windows }
+          - { label: Linux-x64,   runner: ubuntu-latest,  rid: linux-x64,   kind: linux }
+          - { label: Linux-arm64, runner: ubuntu-latest,  rid: linux-arm64, kind: linux }
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Package (macOS)
+        if: matrix.kind == 'macos'
+        run: ./build/build-macos.sh --runtime ${{ matrix.rid }} --output ./artifacts
+
+      - name: Package (Windows)
+        if: matrix.kind == 'windows'
+        shell: pwsh
+        run: ./build/build-windows.ps1 -Runtime ${{ matrix.rid }} -OutputDir ./artifacts
+
+      - name: Package (Linux)
+        if: matrix.kind == 'linux'
+        run: ./build/build-linux.sh --runtime ${{ matrix.rid }} --output ./artifacts
+
+      # Run the packaged app's non-UI startup path, but only where the runner can execute the build.
+      - name: Smoke test (macOS arm64)
+        if: matrix.rid == 'osx-arm64'
+        run: ./artifacts/Waikiki.app/Contents/MacOS/Waikiki --smoke-test
+
+      - name: Smoke test (Windows x64)
+        if: matrix.rid == 'win-x64'
+        shell: pwsh
+        run: |
+          Expand-Archive -Path (Get-ChildItem ./artifacts/*.zip).FullName -DestinationPath ./smoke
+          ./smoke/Waikiki.exe --smoke-test
+          if ($LASTEXITCODE -ne 0) { throw "smoke test failed" }
+
+      - name: Smoke test (Linux x64)
+        if: matrix.rid == 'linux-x64'
+        run: |
+          mkdir smoke && tar -xzf ./artifacts/*.tar.gz -C smoke
+          ./smoke/Waikiki-*/Waikiki --smoke-test
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: Waikiki-${{ matrix.label }}
+          path: |
+            artifacts/*.dmg
+            artifacts/*.zip
+            artifacts/*.tar.gz
+          if-no-files-found: error
+
+  release:
+    name: Publish release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true

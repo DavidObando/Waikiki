@@ -5,6 +5,7 @@
         x:DataType="vm:MainWindowViewModel"
         x:CompileBindings="True"
         Title="Waikiki"
+        Icon="/Resources/waikiki.png"
         Width="980" Height="720" MinWidth="720" MinHeight="520">
 
   <DockPanel>

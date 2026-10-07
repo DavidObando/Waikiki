@@ -12,6 +12,15 @@ dotnet run --project src/Waikiki.App
 ```
 On first launch, open Settings and enter your Yoto client ID, then sign in. Your login is stored in the macOS Keychain, Windows DPAPI or the Linux Secret Service when available.
 
+## Install
+Builds are produced by GitHub Actions for macOS (arm64, x64), Windows (x64, arm64) and Linux (x64, arm64); tagged releases (`v*`) attach them to a GitHub release. To build locally:
+```
+./build/build-macos.sh      # Waikiki.app, .dmg and .zip in ./artifacts
+./build/build-linux.sh      # .tar.gz
+./build/build-windows.ps1   # .zip
+```
+The builds are **not signed or notarized yet**. On macOS, the first launch of a downloaded copy needs right-click, Open (or `xattr -dr com.apple.quarantine Waikiki.app`). Windows SmartScreen may warn on first run. A locally built app runs without these steps.
+
 ## Planned features
 - Import an unencrypted `.m4b` audiobook, such as one produced by [Oahu](https://github.com/DavidObando/Oahu).
 - Split it by chapter, losslessly where possible, into Yoto-compatible tracks.

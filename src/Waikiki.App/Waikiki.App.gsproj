@@ -6,6 +6,7 @@
     <RootNamespace>Waikiki.App</RootNamespace>
     <AssemblyName>Waikiki</AssemblyName>
     <Nullable>enable</Nullable>
+    <ApplicationIcon>Resources/waikiki.ico</ApplicationIcon>
     <NoWarn>$(NoWarn);CA1416;IL2026;IL2037;IL2104</NoWarn>
   </PropertyGroup>
 
@@ -16,6 +17,10 @@
     <PackageReference Include="Avalonia.Themes.Fluent" />
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Tmds.DBus.Protocol" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AvaloniaResource Include="Resources/waikiki.png" />
   </ItemGroup>
 
   <ItemGroup>

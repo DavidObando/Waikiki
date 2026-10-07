@@ -7,7 +7,7 @@
 | **M2** (done) | Lossless chapter splitter writing standalone `.m4a` accepted by Yoto. MP3 fallback only if M0 demands it. |
 | **M3** (done) | `Waikiki.Yoto`: PKCE auth, token storage, upload, transcode polling, cover/icons, content create/update. |
 | **M4** (done) | Avalonia app, audiobook flow end to end. |
-| **M5** | Per-OS packaging and CI. |
+| **M5** (done, unsigned) | Per-OS packaging and CI. |
 | **M6** | Music playlists (v2). |
 
 ## Status notes
@@ -17,3 +17,4 @@
 - M3: `Waikiki.Yoto` has PKCE sign-in with a loopback listener, single-use refresh-token handling, 401-refresh and 429-backoff, upload with progress, transcode polling with failure and timeout detection, cover and icon upload, card create/update/delete/list. 21 unit tests use a fake HTTP handler, and an opt-in live test passed against the real API. Tokens are stored through `ITokenStore`; the shipped store is a user-only file (mode 600). An OS-keychain store is still to do (planned alongside the app in M4/M5).
 - M4: `Waikiki.Core` has the headless pipeline (`AudiobookProject`, `UploadJob`): open, plan, split to a temp file, upload sequentially with weighted progress, cover, create/update card. State is saved after every step (`JobState`), so an interrupted run resumes and a rerun updates the same card instead of duplicating it. `Waikiki.App` is a single Avalonia window (sign in, choose book, edit titles/inclusion, upload, open card). Verified: 18 Core tests, a live macOS Keychain round trip, and a launch with a real book. A full GUI sign-in and upload has not been driven end to end yet.
 - Token storage: `TokenStoreFactory` picks the macOS Keychain (`security -i`, secret on stdin), Windows DPAPI, or Linux Secret Service (`secret-tool`, secret on stdin), and falls back to a user-only file; Settings shows which one is active. The Windows and Linux stores are covered by unit tests with a fake command runner but have not been run on those platforms.
+- M5: `build/build-macos.sh` (self-contained `.app`, `.dmg`, `.zip`, icon built from `waikiki.png`, ad-hoc signed), `build/build-linux.sh` (`.tar.gz` with a `.desktop` template) and `build/build-windows.ps1` (`.zip`), versioned by Nerdbank.GitVersioning (`0.1.<height>`). `.github/workflows/build.yml` tests on Ubuntu, macOS and Windows, packages all six runtime targets, smoke-tests the native-arch builds, and attaches artifacts to a release on `v*` tags. Verified locally: the macOS build, its `.app` smoke test and launch, and the Linux x64/arm64 and Windows x64 publishes. The Windows script and the workflow itself have not run yet (no `pwsh` locally; actionlint is clean). Code signing and notarization are not set up.

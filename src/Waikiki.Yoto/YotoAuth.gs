@@ -72,7 +72,7 @@ class YotoAuth {
             if code == nil || query["state"] != state {
                 throw YotoAuthException("Yoto sign-in returned an unexpected response (state mismatch).")
             }
-            return await ExchangeCodeAsync(code!!, verifier, cancellationToken)
+            return await ExchangeCodeAsync(code, verifier, cancellationToken)
         } finally {
             listener.Close()
         }
