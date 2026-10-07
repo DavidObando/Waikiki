@@ -141,6 +141,8 @@ class Mp4Reader {
             let children = BoxRef.Children(buf, stbl.PayloadStart, stbl.End)
             if let stsd = BoxRef.Find(children, "stsd") {
                 // ver/flags(4) entryCount(4) then the first sample entry.
+                track.SampleDescription = [stsd.End - stsd.Start]uint8
+                Array.Copy(buf, stsd.Start, track.SampleDescription, 0, track.SampleDescription.Length)
                 let e = stsd.PayloadStart + 8
                 if e + 8 <= stsd.End {
                     track.SampleEntry = ByteReader.FourCC(buf, e + 4)

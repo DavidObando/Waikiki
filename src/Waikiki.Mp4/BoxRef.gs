@@ -5,13 +5,20 @@ import System.Collections.Generic
 
 /// A box located inside an in-memory buffer. Payload excludes the box header.
 data class BoxRef {
-    init(type string, payloadStart int32, end int32) {
+    init(type string, start int32, payloadStart int32, end int32) {
         Type = type
+        Start = start
         PayloadStart = payloadStart
         End = end
     }
 
     prop Type string {
+        get;
+        init;
+    }
+
+    /// Offset of the box header.
+    prop Start int32 {
         get;
         init;
     }
@@ -47,7 +54,7 @@ data class BoxRef {
                 if size < int64(header) || int64(p) + size > int64(end) {
                     break
                 }
-                result.Add(BoxRef(type, p + header, p + int32(size)))
+                result.Add(BoxRef(type, p, p + header, p + int32(size)))
                 p = p + int32(size)
             }
             return result

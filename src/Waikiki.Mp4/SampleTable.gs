@@ -61,8 +61,14 @@ class SampleTable {
 
     prop SampleCount int32 -> Sizes.Length
 
+    private var offsetCache []?int64 = nil
+    private var durationCache []?uint32 = nil
+
     /// Decode duration of every sample in timescale units.
     func GetDurations() []uint32 {
+        if let cached = durationCache {
+            return cached
+        }
         let result = [SampleCount]uint32
         var n int32 = 0
         for i in 0 ... DeltaCounts.Length {
@@ -73,11 +79,15 @@ class SampleTable {
                 k++
             }
         }
+        durationCache = result
         return result
     }
 
     /// Absolute file offset of every sample.
     func GetOffsets() []int64 {
+        if let cached = offsetCache {
+            return cached
+        }
         let result = [SampleCount]int64
         var sample int32 = 0
         for c in 0 ... ChunkOffsets.Length {
@@ -97,6 +107,7 @@ class SampleTable {
                 k++
             }
         }
+        offsetCache = result
         return result
     }
 }

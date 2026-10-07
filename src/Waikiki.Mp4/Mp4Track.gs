@@ -28,6 +28,12 @@ class Mp4Track {
     /// Four-character code of the first sample entry, for example "mp4a".
     var SampleEntry string = ""
 
+    /// The complete `stsd` box (header included), copied verbatim into split outputs.
+    prop SampleDescription []uint8 {
+        get;
+        set;
+    }
+
     prop Channels int32 {
         get;
         set;
