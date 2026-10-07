@@ -19,7 +19,7 @@ Builds are produced by GitHub Actions for macOS (arm64, x64), Windows (x64, arm6
 ./build/build-linux.sh      # .tar.gz
 ./build/build-windows.ps1   # .zip
 ```
-The builds are **not signed or notarized yet**. On macOS, the first launch of a downloaded copy needs right-click, Open (or `xattr -dr com.apple.quarantine Waikiki.app`). Windows SmartScreen may warn on first run. A locally built app runs without these steps.
+The macOS builds from CI are signed with a Developer ID certificate and notarized by Apple (when the signing secrets are configured); a locally built macOS app is ad-hoc signed and runs on the machine that built it. The Windows and Linux builds are not signed, and Windows SmartScreen may warn on first run.
 
 ## Planned features
 - Import an unencrypted `.m4b` audiobook, such as one produced by [Oahu](https://github.com/DavidObando/Oahu).

@@ -40,6 +40,9 @@ jobs:
     name: Package ${{ matrix.label }}
     needs: test
     runs-on: ${{ matrix.runner }}
+    env:
+      # True when the signing certificate secret is available (not on fork PRs).
+      HAS_CERT: ${{ secrets.MACOS_CERTIFICATE_P12 != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -59,9 +62,68 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Import code signing certificate
+        if: matrix.kind == 'macos' && env.HAS_CERT == 'true'
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+        run: |
+          CERT_FILE="$(mktemp "$RUNNER_TEMP/cert.XXXXXX.p12")"
+          echo "$MACOS_CERTIFICATE_P12" | base64 --decode > "$CERT_FILE"
+
+          KEYCHAIN_PATH="$RUNNER_TEMP/build.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_FILE" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          # shellcheck disable=SC2046
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          rm -f "$CERT_FILE"
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep "Developer ID Application" | head -1 | sed 's/.*"\(.*\)".*/\1/')"
+          if [[ -z "$IDENTITY" ]]; then
+            echo "No Developer ID Application identity found in the imported certificate." >&2
+            exit 1
+          fi
+          echo "CODESIGN_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "KEYCHAIN_PATH=$KEYCHAIN_PATH" >> "$GITHUB_ENV"
+          echo "Found signing identity: $IDENTITY"
+
       - name: Package (macOS)
         if: matrix.kind == 'macos'
-        run: ./build/build-macos.sh --runtime ${{ matrix.rid }} --output ./artifacts
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          args=(--runtime "${{ matrix.rid }}" --output ./artifacts)
+          if [[ -n "${CODESIGN_IDENTITY:-}" ]]; then
+            args+=(--codesign-identity "$CODESIGN_IDENTITY")
+          fi
+          # Notarize everything except pull requests, and only when all the Apple credentials exist.
+          if [[ "$GITHUB_EVENT_NAME" != "pull_request" && -n "${CODESIGN_IDENTITY:-}" \
+                && -n "${APPLE_ID:-}" && -n "${APPLE_ID_PASSWORD:-}" && -n "${APPLE_TEAM_ID:-}" ]]; then
+            args+=(--notarize)
+            echo "NOTARIZED=true" >> "$GITHUB_ENV"
+          fi
+          ./build/build-macos.sh "${args[@]}"
+
+      - name: Verify notarization
+        if: matrix.kind == 'macos' && env.NOTARIZED == 'true'
+        run: |
+          for dmg in ./artifacts/*.dmg; do
+            xcrun stapler validate "$dmg"
+            spctl --assess --type open --context context:primary-signature -vv "$dmg"
+          done
+
+      - name: Remove signing keychain
+        if: always() && matrix.kind == 'macos'
+        run: |
+          if [[ -n "${KEYCHAIN_PATH:-}" && -f "${KEYCHAIN_PATH:-}" ]]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
 
       - name: Package (Windows)
         if: matrix.kind == 'windows'
