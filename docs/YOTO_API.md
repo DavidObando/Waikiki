@@ -62,3 +62,15 @@ Why the whole `.m4b` failed:
 - The original `.m4b` structure is sound: audio track 1 has `tref/chap` pointing at track 2, which is a QuickTime text chapter track. ffmpeg `-c copy -map 0:a` leaves the `tref/chap` box in the output `.m4a` while dropping the text track, so the splits carry a dangling reference ("Referenced QT chapter track not found"). Yoto accepted them anyway, but `Waikiki.Mp4` must not write `tref` into split outputs.
 
 Still unconfirmed: whether `metadata.media` is required, icon upload raw vs multipart, exact per-track/per-card limits, opus `duration`/`fileSize` values to put in the card (we used `transcodedInfo`).
+
+## M3 live verification (2026-10-07, `Waikiki.Yoto` against the real API)
+Confirmed with the opt-in `LiveTests`:
+- Custom icon upload as a raw PNG body (`Content-Type: image/png`, `?autoConvert=true&filename=...`) works; the response carries the new icon's media ID, usable as `yoto:#<mediaId>`. Multipart was not tried.
+- Updating a card: `POST /content` with a top-level `cardId` updates it in place (title change confirmed via `GET /content/mine`).
+- Deleting a card: `DELETE /content/{cardId}`.
+- The public icon library has 516 icons (`GET /media/displayIcons/user/yoto`).
+- Uploading identical audio twice returns the same `transcodedSha256`, so uploads are idempotent by content.
+- The upload PUT sends a `Content-Length` and no bearer token (the presigned URL authorizes it); progress is reported as bytes sent.
+- Failure detection: a transcode is failed when `transcode.failedUploadSha256` is set, even though the HTTP status stays 202.
+
+Still untested: whether `metadata.media` is required on `POST /content` (we always send it), exact per-track/per-card limits, and the behavior of multipart icon uploads.
