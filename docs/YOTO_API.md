@@ -46,3 +46,19 @@ Sources are third-party summaries unless noted. Items marked **[unconfirmed]** m
 - Up to 100 tracks per card, 100 MB and 60 minutes per track, about 500 MB per card.
 - MP3 and AAC/M4A accepted; Yoto transcodes server-side.
 - Rate limits unpublished. Upload sequentially, back off on 429.
+
+## Spike results (M0, 2026-10-07, real account)
+Confirmed:
+- PKCE login with loopback `http://127.0.0.1:8787/callback` works. Scope string `openid profile offline_access user:content:manage user:icons:manage` was accepted. Access token lifetime is 8 h (28800 s).
+- Per-chapter AAC `.m4a` (ffmpeg `-c copy -map 0:a -map_metadata -1`, 1 MB to 36 MB, up to 38 min) uploads and transcodes fine. Content-Type `audio/mp4`. Yoto re-encodes to Opus 64k ogg and applies loudnorm even with `loudnorm=false` in the poll URL (the option is on the upload; `loudnorm=false` did not disable it). `transcodedInfo.duration` is in **seconds**, not ms. Transcode took about 50 s for a 17 MB, 17 min track.
+- Success: poll returns 200 with `transcode.transcodedSha256`; in progress: 202.
+- Cover: `POST /media/coverImage/user/me/upload?autoconvert=true`, raw JPEG body (600x600 accepted), returns `coverImage.mediaUrl`.
+- Public icons: `GET /media/displayIcons/user/yoto` returns `displayIcons[]` with `mediaId`, `title`, `publicTags`. `yoto:#<mediaId>` works as `icon16x16`.
+- `POST /content` with the JSON shape above succeeded; response has `card.cardId` and `_id`. `metadata.media` totals were sent, so whether they are required is still untested.
+- `GET /content/mine` lists the user's cards.
+
+Why the whole `.m4b` failed:
+- A 9.6 h, 550 MB `.m4b` (renamed `.m4a`) never starts transcoding. Polling returns 202 forever, but the body has `failedUploadSha256` set, `startedAt: null`, `progress: null`. The client must treat that as failure. Most likely cause is the size/duration limit, not the file structure; not isolated further.
+- The original `.m4b` structure is sound: audio track 1 has `tref/chap` pointing at track 2, which is a QuickTime text chapter track. ffmpeg `-c copy -map 0:a` leaves the `tref/chap` box in the output `.m4a` while dropping the text track, so the splits carry a dangling reference ("Referenced QT chapter track not found"). Yoto accepted them anyway, but `Waikiki.Mp4` must not write `tref` into split outputs.
+
+Still unconfirmed: whether `metadata.media` is required, icon upload raw vs multipart, exact per-track/per-card limits, opus `duration`/`fileSize` values to put in the card (we used `transcodedInfo`).
