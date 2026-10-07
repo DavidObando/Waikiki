@@ -174,8 +174,7 @@ class YotoTests {
         handler.Enqueue(202, PendingJson)
         handler.Enqueue(200, DoneJson)
         let audio = []uint8{1, 2, 3, 4, 5}
-        var reported int64 = 0
-        let progress = Progress[int64]((n int64) -> { reported = n })
+        let progress = SyncProgress[int64]()
         let result = await client.UploadAudioAsync(MemoryStream(audio), "audio/mp4", progress, None)
 
         Assert.Equal("SHA-OUT", result.Sha256)
@@ -195,8 +194,8 @@ class YotoTests {
         Assert.Equal(int64(5), handler.Requests[1].ContentLength!!)
         Assert.Equal("https://api.yotoplay.com/media/upload/up1/transcoded?loudnorm=false", handler.Requests[2].Url)
         Assert.Equal("Bearer access-1", handler.Requests[4].Authorization)
-        await Task.Delay(10)
-        Assert.Equal(int64(5), reported)
+        let reports = progress.ToList()
+        Assert.Equal(int64(5), reports[reports.Count - 1])
     }
 
     @Fact

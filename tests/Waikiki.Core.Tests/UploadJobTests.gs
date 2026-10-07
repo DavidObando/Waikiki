@@ -119,10 +119,9 @@ class UploadJobTests {
             EnqueueTrack(env.Handler, "SHA-B")
             EnqueueTrack(env.Handler, "SHA-C")
             EnqueueCoverAndCard(env.Handler, "card1")
-            let reports = List[JobProgress]()
-            let progress = Progress[JobProgress]((p JobProgress) -> { reports.Add(p) })
+            let progress = SyncProgress[JobProgress]()
             let cardId = await env.Job.RunAsync(env.Project, progress, CancellationToken.None)
-            await Task.Delay(50)
+            let reports = progress.ToList()
 
             Assert.Equal("card1", cardId)
             Assert.Equal(11, env.Handler.Requests.Count)
