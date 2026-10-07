@@ -47,9 +47,11 @@ class UploadJob {
         let overhead = float64(totalBytes) * 0.02 + 1.0
         let denominator = float64(totalBytes) + overhead * 2.0
         var doneBytes int64 = 0
-        let Report = (message string, extra float64, number int32) -> {
+        // The caller passes the completed-bytes value explicitly, so a report is always computed from the
+        // state at the moment it was made and never from a counter that has moved on.
+        let Report = (message string, done int64, extra float64, number int32) -> {
             if let p = progress {
-                p.Report(JobProgress(message, Math.Min(1.0, (float64(doneBytes) + extra) / denominator), number, tracks.Count))
+                p.Report(JobProgress(message, Math.Min(1.0, (float64(done) + extra) / denominator), number, tracks.Count))
             }
         }
 
@@ -62,17 +64,19 @@ class UploadJob {
             var upload AudioUpload? = nil
             if state.Tracks.ContainsKey(track.Key) {
                 upload = state.Tracks[track.Key]
-                Report("Track ${number}/${tracks.Count} already uploaded", 0.0, number)
+                Report("Track ${number}/${tracks.Count} already uploaded", doneBytes, 0.0, number)
             } else {
                 let temp = Path.Combine(tempDirectory, "waikiki-${Guid.NewGuid():N}.m4a")
                 try {
-                    Report("Splitting track ${number}/${tracks.Count}", 0.0, number)
+                    Report("Splitting track ${number}/${tracks.Count}", doneBytes, 0.0, number)
                     using let output = FileStream(temp, FileMode.Create, FileAccess.Write, FileShare.None)
                     ChapterSplitter.Write(source, project.Info, track.Segment, project.Tracks.Count, output)
                     output.Dispose()
                     let size = FileInfo(temp).Length
-                    let sent = Progress[int64]((n int64) -> {
-                        Report("Uploading track ${number}/${tracks.Count}", float64(n) / float64(Math.Max(1L, size)) * float64(track.Segment.AudioBytes), number)
+                    let baseDone = doneBytes
+                    let sent = ByteProgress((n int64) -> {
+                        let share = float64(n) / float64(Math.Max(1L, size)) * float64(track.Segment.AudioBytes)
+                        Report("Uploading track ${number}/${tracks.Count}", baseDone, share, number)
                     })
                     upload = await client.UploadAudioFileAsync(temp, "audio/mp4", sent, cancellationToken)
                     state.Tracks[track.Key] = upload
@@ -91,7 +95,7 @@ class UploadJob {
 
         var coverUrl string? = nil
         if let cover = project.Cover {
-            Report("Uploading cover", 0.0, 0)
+            Report("Uploading cover", doneBytes, 0.0, 0)
             let hash = Convert.ToHexString(SHA256.HashData(cover.Data))
             if state.CoverHash == hash && state.CoverUrl != nil {
                 coverUrl = state.CoverUrl
@@ -105,7 +109,7 @@ class UploadJob {
         }
         doneBytes = doneBytes + int64(overhead)
 
-        Report("Creating card", 0.0, 0)
+        Report("Creating card", doneBytes, 0.0, 0)
         let request = CardRequest(project.CardTitle, chapters)
         request.CardId = state.CardId
         request.CoverUrl = coverUrl
@@ -113,7 +117,7 @@ class UploadJob {
         state.CardId = cardId
         await states.SaveAsync(state)
         doneBytes = doneBytes + int64(overhead)
-        Report("Done", 0.0, 0)
+        Report("Done", doneBytes, 0.0, 0)
         return cardId
     }
 }
