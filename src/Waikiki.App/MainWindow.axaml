@@ -56,11 +56,17 @@
     <Border DockPanel.Dock="Top" Padding="16,12" IsVisible="{Binding IsSettingsOpen}"
             BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,0,0,1">
       <StackPanel Spacing="8" MaxWidth="640" HorizontalAlignment="Left">
-        <TextBlock Text="Yoto client ID" FontWeight="SemiBold" />
-        <TextBox Text="{Binding ClientId}" Watermark="Paste the client ID from dashboard.yoto.dev" />
+        <TextBlock Text="Yoto app registration" FontWeight="SemiBold" />
+        <TextBlock TextWrapping="Wrap">
+          <Run Text="Using " /><Run Text="{Binding ClientSourceText}" />
+        </TextBlock>
+        <TextBox Text="{Binding ClientId}" Watermark="Custom client ID (leave empty to use the built-in one)" />
+        <StackPanel Orientation="Horizontal" Spacing="8">
+          <Button Content="Save" Command="{Binding SaveClientIdCommand}" Classes="accent" />
+          <Button Content="Use built-in default" Command="{Binding UseDefaultClientIdCommand}" />
+        </StackPanel>
         <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}"
-                   Text="Register an app at dashboard.yoto.dev, add http://127.0.0.1:8787/callback as its redirect URI, and enable the content and icon scopes." />
-        <Button Content="Save" Command="{Binding SaveClientIdCommand}" HorizontalAlignment="Left" Classes="accent" />
+                   Text="Only needed if you build Waikiki yourself or Yoto stops accepting the built-in one. Register an app at dashboard.yoto.dev, add http://127.0.0.1:8787/callback as its redirect URI, and enable the content and icon scopes. Changing the client ID signs you out." />
         <TextBlock Text="Where your Yoto login is kept" FontWeight="SemiBold" Margin="0,8,0,0" />
         <TextBlock Text="{Binding StoreDescription}" TextWrapping="Wrap" />
         <TextBlock IsVisible="{Binding StoreIsPlainFile}" TextWrapping="Wrap"

@@ -46,7 +46,7 @@ Repo files: `Waikiki.slnx`, `Directory.Packages.props` (versions aligned with Oa
 Sequential: upload URL, PUT, poll for `transcodedSha256`, then `POST /content` referencing `yoto:#<sha>`. Cover and icons are separate uploads. Retries are idempotent by file SHA; 429 handled with backoff. Job state is persisted so an interrupted upload can resume.
 
 ## 6. Auth and security
-- PKCE with loopback redirect; `client_id` is configuration, not committed.
+- PKCE with loopback redirect. The `client_id` is a public identifier, not a secret: Waikiki ships with a built-in app registration (`YotoClientIds.BuiltIn`), overridable by the Settings value or the `WAIKIKI_YOTO_CLIENT_ID` environment variable (in that order). If Yoto answers `invalid_client` / `unauthorized_client` (or "unknown client"), the app says the registration was rejected and opens Settings so the user can supply their own. Changing the client ID signs the user out, because tokens belong to a client.
 - Scopes: `user:content:manage offline_access` (+ `user:icons:manage` if required).
 - Refresh tokens are single-use: write atomically.
 - Store tokens in the OS keychain (macOS Keychain, Windows Credential Manager, libsecret). Never log tokens.
@@ -62,4 +62,4 @@ Small generated `.m4b` fixtures (no copyrighted audio), parser and splitter unit
 - Writing a correct MP4 muxer is the biggest engineering risk; keep it audio-only and minimal.
 - Yoto limits and several API details are unconfirmed (see [YOTO_API.md](YOTO_API.md)); rate limits unpublished.
 - G# is pre-1.0; Avalonia plus CommunityToolkit works in Oahu, so risk is low.
-- A Yoto developer client must be registered before any real testing.
+- The built-in registration is unverified, so Yoto's consent screen shows a warning and the developer's email. Verification (yoto.dev/verify) is worth doing before promoting the app widely; verified apps have their scopes locked.

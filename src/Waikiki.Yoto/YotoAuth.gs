@@ -67,7 +67,7 @@ class YotoAuth {
             await context.Response.OutputStream.WriteAsync(bytes, 0, bytes.Length)
             context.Response.Close()
             if error != nil {
-                throw YotoAuthException("Yoto sign-in was rejected: ${error} ${query["error_description"]}")
+                throw YotoAuthException("Yoto sign-in was rejected: ${error} ${query["error_description"]}", error, query["error_description"])
             }
             if code == nil || query["state"] != state {
                 throw YotoAuthException("Yoto sign-in returned an unexpected response (state mismatch).")
@@ -138,7 +138,16 @@ class YotoAuth {
         let body = await response.Content.ReadAsStringAsync(cancellationToken)
         if !response.IsSuccessStatusCode {
             if int32(response.StatusCode) == 400 || int32(response.StatusCode) == 401 || int32(response.StatusCode) == 403 {
-                throw YotoAuthException("Yoto rejected the sign-in or refresh (${int32(response.StatusCode)}): ${body}")
+                var code string? = nil
+                var description string? = nil
+                try {
+                    let node = JsonNode.Parse(body)
+                    code = JsonHelpers.Str(node, "error")
+                    description = JsonHelpers.Str(node, "error_description")
+                } catch (e Exception) {
+                    // Not JSON; keep the raw body in the message.
+                }
+                throw YotoAuthException("Yoto rejected the sign-in or refresh (${int32(response.StatusCode)}): ${body}", code, description)
             }
             throw YotoApiException(int32(response.StatusCode), body)
         }

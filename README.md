@@ -10,7 +10,7 @@ Waikiki is a desktop app for Windows, macOS and Linux that creates [Yoto](https:
 ```
 dotnet run --project src/Waikiki.App
 ```
-On first launch, open Settings and enter your Yoto client ID, then sign in. Your login is stored in the macOS Keychain, Windows DPAPI or the Linux Secret Service when available.
+Sign in to Yoto, choose a book, and upload. Your login is stored in the macOS Keychain, Windows DPAPI or the Linux Secret Service when available.
 
 ## Install
 Builds are produced by GitHub Actions for macOS (arm64, x64), Windows (x64, arm64) and Linux (x64, arm64); tagged releases (`v*`) attach them to a GitHub release. To build locally:
@@ -33,11 +33,12 @@ The macOS builds from CI are signed with a Developer ID certificate and notarize
 - Written in [G#](https://github.com/DavidObando/gsharp), targeting .NET 10, with [Avalonia](https://avaloniaui.net) for the UI.
 - Requires the .NET 10 SDK. The G# compiler comes in through the `Gsharp.NET.Sdk` NuGet package.
 
-## Yoto setup
-Waikiki signs in with OAuth (Authorization Code with PKCE). You need a Yoto developer client:
-1. Register an app at <https://dashboard.yoto.dev>.
-2. Add the redirect URI listed in [docs/YOTO_API.md](docs/YOTO_API.md) and tick the required scopes.
-3. Put the resulting client ID in Waikiki's settings (details will land with the first build).
+## Yoto sign-in
+Waikiki signs in with OAuth (Authorization Code with PKCE) and ships with its own Yoto app registration, so there is nothing to set up: press **Sign in to Yoto**. The first time, Yoto's consent screen may show an "unverified app" warning.
+
+That client ID is not a secret (it is visible in the sign-in URL of every OAuth app). If you build Waikiki yourself, or Yoto ever stops accepting the built-in one, register your own app at <https://dashboard.yoto.dev> (public client, redirect URI `http://127.0.0.1:8787/callback`, scopes for content and icons) and use it in either of these ways. The first one found wins:
+1. Settings, "Yoto app registration".
+2. The `WAIKIKI_YOTO_CLIENT_ID` environment variable.
 
 ## Documentation
 - [docs/SPEC.md](docs/SPEC.md): product and technical spec

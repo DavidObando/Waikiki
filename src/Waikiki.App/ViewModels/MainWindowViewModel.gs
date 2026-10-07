@@ -36,11 +36,12 @@ partial class MainWindowViewModel : ObservableObject {
     }
 
     // Settings and account
+    /// The custom client ID typed in Settings; empty means "use the built-in one".
     @ObservableProperty
     private var clientId string = ""
 
     @ObservableProperty
-    private var needsClientId bool
+    private var clientSourceText string = ""
 
     @ObservableProperty
     private var isSettingsOpen bool
@@ -93,7 +94,7 @@ partial class MainWindowViewModel : ObservableObject {
     prop HasResult bool -> resultUrl.Length > 0
     prop AccountText string -> if IsSignedIn { "Signed in to Yoto" } else { "Not signed in" }
     prop CanUpload bool -> HasProject && IsSignedIn && !IsBusy
-    prop CanSignIn bool -> !IsSignedIn && !NeedsClientId && !IsBusy
+    prop CanSignIn bool -> !IsSignedIn && !IsBusy
     prop CanOpenBook bool -> !IsBusy
 
     /// Raises change notifications for the derived properties above.
@@ -122,24 +123,29 @@ partial class MainWindowViewModel : ObservableObject {
         StoreIsPlainFile = !choice.IsOsBacked
         session = YotoSession(choice, HttpClient())
         ClientId = settings.ClientId ?? ""
-        if ClientId.Trim().Length > 0 {
-            await ConfigureSessionAsync()
-        } else {
-            NeedsClientId = true
-            IsSettingsOpen = true
-        }
+        await ConfigureSessionAsync()
         RefreshDerived()
         if let path = StartupPath {
             await OpenBookAsync(path)
         }
     }
 
+    /// The client ID in effect: Settings override, then the environment variable, then the built-in ID.
+    private func ResolveClientId() ResolvedClientId {
+        return YotoClientIds.Resolve(settings.ClientId, Environment.GetEnvironmentVariable(YotoClientIds.EnvironmentVariable))
+    }
+
     private async func ConfigureSessionAsync() {
         guard let s = session else {
             return
         }
-        s.Configure(ClientId)
-        NeedsClientId = false
+        let resolved = ResolveClientId()
+        s.Configure(resolved.ClientId)
+        ClientSourceText = switch resolved.Source {
+            case ClientIdSource.Settings: "a custom client ID from Settings"
+            case ClientIdSource.Environment: "the ${YotoClientIds.EnvironmentVariable} environment variable"
+            default: "Waikiki's built-in client ID"
+        }
         try {
             IsSignedIn = await s.HasSessionAsync()
         } catch (e Exception) {
@@ -149,19 +155,31 @@ partial class MainWindowViewModel : ObservableObject {
         }
     }
 
+    /// Saves the optional custom client ID. A different client invalidates the saved login, so that is cleared.
     @RelayCommand
     private async func SaveClientId() {
-        if ClientId.Trim().Length == 0 {
-            ErrorText = "Enter the client ID from your Yoto developer app."
-            RefreshDerived()
+        guard let s = session else {
             return
         }
-        settings.ClientId = ClientId.Trim()
+        let before = ResolveClientId().ClientId
+        let typed = ClientId.Trim()
+        settings.ClientId = if typed.Length == 0 { nil } else { typed }
         await settingsStore.SaveAsync(settings)
         ErrorText = ""
+        if ResolveClientId().ClientId != before {
+            await s.SignOutAsync()
+            IsSignedIn = false
+            StatusText = "Client ID changed. Sign in to Yoto again."
+        }
         await ConfigureSessionAsync()
         IsSettingsOpen = false
         RefreshDerived()
+    }
+
+    @RelayCommand
+    private async func UseDefaultClientId() {
+        ClientId = ""
+        await SaveClientId()
     }
 
     @RelayCommand
@@ -188,7 +206,12 @@ partial class MainWindowViewModel : ObservableObject {
             IsSignedIn = true
             StatusText = "Signed in."
         } catch (e OperationCanceledException) {
-            StatusText = "Sign-in canceled."
+            StatusText = "Sign-in timed out or was canceled."
+            ErrorText = ClientHint
+        } catch (e YotoAuthException) {
+            ErrorText = if e.IsClientRejected { ClientRejectedMessage() } else { "Sign-in failed: ${e.Message}. ${ClientHint}" }
+            IsSettingsOpen = e.IsClientRejected
+            StatusText = ""
         } catch (e Exception) {
             ErrorText = "Sign-in failed: ${e.Message}"
             StatusText = ""
@@ -306,7 +329,12 @@ partial class MainWindowViewModel : ObservableObject {
             StatusText = "Canceled. Finished tracks are kept; press Upload to resume."
         } catch (e YotoAuthException) {
             IsSignedIn = false
-            ErrorText = "Your Yoto session expired. Sign in again, then press Upload to resume."
+            ErrorText = if e.IsClientRejected {
+                ClientRejectedMessage()
+            } else {
+                "Your Yoto session expired. Sign in again, then press Upload to resume."
+            }
+            IsSettingsOpen = e.IsClientRejected
             StatusText = ""
         } catch (e YotoTranscodeException) {
             ErrorText = "Yoto could not process one of the tracks: ${e.Message}"
@@ -334,6 +362,13 @@ partial class MainWindowViewModel : ObservableObject {
     }
 
     prop LastFolder string? -> settings.LastFolder
+
+    private const ClientHint string = "If the Yoto sign-in page showed an error about the app, the built-in Yoto app registration may have been revoked. You can use your own in Settings."
+
+    private func ClientRejectedMessage() string {
+        return "Yoto rejected the client ID in use (${ClientSourceText}). Waikiki's built-in registration may have been revoked or changed. " +
+            "Register your own app at dashboard.yoto.dev and enter its client ID in Settings."
+    }
 
     shared {
         private func LoadCover(cover CoverArt?) Bitmap? {

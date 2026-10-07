@@ -24,6 +24,36 @@ class YotoApiException : Exception {
 class YotoAuthException : Exception {
     init(message string) : base(message) {
     }
+
+    init(message string, errorCode string?, errorDescription string?) : base(message) {
+        ErrorCode = errorCode
+        ErrorDescription = errorDescription
+    }
+
+    /// The OAuth `error` value, when Yoto returned one.
+    prop ErrorCode string? {
+        get;
+        init;
+    }
+
+    prop ErrorDescription string? {
+        get;
+        init;
+    }
+
+    /// True when Yoto indicates the client ID itself is unknown, disabled or revoked, as opposed to a
+    /// problem with this particular sign-in or session.
+    prop IsClientRejected bool {
+        get {
+            if ErrorCode == "invalid_client" || ErrorCode == "unauthorized_client" {
+                return true
+            }
+            if let d = ErrorDescription {
+                return d.Contains("unknown client", StringComparison.OrdinalIgnoreCase)
+            }
+            return false
+        }
+    }
 }
 
 /// Yoto accepted an upload but could not transcode it (for example a file over its size or duration limits).
