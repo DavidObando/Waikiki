@@ -16,6 +16,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Waikiki.Yoto/Waikiki.Yoto.gsproj" />
+    <ProjectReference Include="../Waikiki.TestSupport/Waikiki.TestSupport.gsproj" />
   </ItemGroup>
 
 </Project>

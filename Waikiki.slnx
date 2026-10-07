@@ -2,9 +2,12 @@
   <Folder Name="/src/">
     <Project Path="src/Waikiki.Mp4/Waikiki.Mp4.gsproj" Type="C#" />
     <Project Path="src/Waikiki.Yoto/Waikiki.Yoto.gsproj" Type="C#" />
+    <Project Path="src/Waikiki.Core/Waikiki.Core.gsproj" Type="C#" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Waikiki.TestSupport/Waikiki.TestSupport.gsproj" Type="C#" />
     <Project Path="tests/Waikiki.Mp4.Tests/Waikiki.Mp4.Tests.gsproj" Type="C#" />
     <Project Path="tests/Waikiki.Yoto.Tests/Waikiki.Yoto.Tests.gsproj" Type="C#" />
+    <Project Path="tests/Waikiki.Core.Tests/Waikiki.Core.Tests.gsproj" Type="C#" />
   </Folder>
 </Solution>

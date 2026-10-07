@@ -1,4 +1,4 @@
-package Waikiki.Mp4.Tests
+package Waikiki.TestSupport
 
 import System
 import System.Collections.Generic

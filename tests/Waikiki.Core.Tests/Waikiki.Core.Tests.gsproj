@@ -15,7 +15,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../../src/Waikiki.Core/Waikiki.Core.gsproj" />
     <ProjectReference Include="../../src/Waikiki.Mp4/Waikiki.Mp4.gsproj" />
+    <ProjectReference Include="../../src/Waikiki.Yoto/Waikiki.Yoto.gsproj" />
     <ProjectReference Include="../Waikiki.TestSupport/Waikiki.TestSupport.gsproj" />
   </ItemGroup>
 

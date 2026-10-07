@@ -7,6 +7,7 @@ import System.Text.Json.Nodes
 import System.Threading
 import System.Threading.Tasks
 import System.Net.Http
+import Waikiki.TestSupport
 import Waikiki.Yoto
 import Xunit
 

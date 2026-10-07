@@ -1,4 +1,4 @@
-package Waikiki.Yoto.Tests
+package Waikiki.TestSupport
 
 import System
 import System.Collections.Generic

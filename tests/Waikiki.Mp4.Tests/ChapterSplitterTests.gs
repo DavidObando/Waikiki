@@ -5,6 +5,7 @@ import System.Collections.Generic
 import System.IO
 import System.Text
 import Waikiki.Mp4
+import Waikiki.TestSupport
 import Xunit
 
 class ChapterSplitterTests {

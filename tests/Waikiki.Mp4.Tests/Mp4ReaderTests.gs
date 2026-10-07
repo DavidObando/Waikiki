@@ -3,6 +3,7 @@ package Waikiki.Mp4.Tests
 import System
 import System.IO
 import Waikiki.Mp4
+import Waikiki.TestSupport
 import Xunit
 
 class Mp4ReaderTests {
