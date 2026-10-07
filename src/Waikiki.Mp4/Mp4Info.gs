@@ -40,6 +40,17 @@ class Mp4Info {
         set;
     }
 
+    /// Position of the file within its album (`trkn`/`disk`), when tagged; 0 means unknown.
+    prop TrackNumber int32 {
+        get;
+        set;
+    }
+
+    prop DiscNumber int32 {
+        get;
+        set;
+    }
+
     prop Cover CoverArt? {
         get;
         set;

@@ -17,7 +17,7 @@
       <Grid ColumnDefinitions="*,Auto">
         <StackPanel Grid.Column="0" VerticalAlignment="Center">
           <TextBlock Text="Waikiki" FontSize="20" FontWeight="SemiBold" />
-          <TextBlock Text="Turn audiobooks into Yoto cards" FontSize="12"
+          <TextBlock Text="Turn audiobooks and music into Yoto cards" FontSize="12"
                      Foreground="{DynamicResource MutedTextBrush}" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -43,7 +43,9 @@
                      IsVisible="{Binding IsBusy}" />
         <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
           <Button Content="Open in Yoto" Command="{Binding OpenCardCommand}" IsVisible="{Binding HasResult}" />
-          <Button Content="Choose another book..." Click="OnChooseFile" IsEnabled="{Binding CanOpenBook}"
+          <Button Content="Choose audiobook..." Click="OnChooseFile" IsEnabled="{Binding CanOpenBook}"
+                  IsVisible="{Binding HasProject}" />
+          <Button Content="Choose music folder..." Click="OnChooseFolder" IsEnabled="{Binding CanOpenBook}"
                   IsVisible="{Binding HasProject}" />
           <Button Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
           <Button Content="Upload to Yoto" Command="{Binding UploadCommand}" IsEnabled="{Binding CanUpload}"
@@ -79,11 +81,13 @@
     <Grid>
       <!-- No book yet -->
       <StackPanel IsVisible="{Binding !HasProject}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-        <TextBlock Text="Choose an audiobook to get started" FontSize="18" HorizontalAlignment="Center" />
-        <TextBlock Text="An unprotected .m4b file, for example one exported by Oahu." HorizontalAlignment="Center"
-                   Foreground="{DynamicResource MutedTextBrush}" />
-        <Button Content="Choose audiobook..." Click="OnChooseFile" IsEnabled="{Binding CanOpenBook}"
-                HorizontalAlignment="Center" Classes="accent" />
+        <TextBlock Text="Make a Yoto card" FontSize="18" HorizontalAlignment="Center" />
+        <TextBlock Text="Pick an audiobook (.m4b, for example one exported by Oahu) or a folder of music files."
+                   HorizontalAlignment="Center" Foreground="{DynamicResource MutedTextBrush}" />
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+          <Button Content="Choose audiobook..." Click="OnChooseFile" IsEnabled="{Binding CanOpenBook}" Classes="accent" />
+          <Button Content="Choose music folder..." Click="OnChooseFolder" IsEnabled="{Binding CanOpenBook}" Classes="accent" />
+        </StackPanel>
       </StackPanel>
 
       <!-- Book review -->
@@ -96,16 +100,19 @@
           <TextBlock Text="Card title" FontWeight="SemiBold" />
           <TextBox Text="{Binding CardTitle}" />
           <TextBlock Text="{Binding BookSummary}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
+          <Button Content="Choose cover..." Click="OnChooseCover" IsEnabled="{Binding CanOpenBook}" HorizontalAlignment="Left" />
         </StackPanel>
 
         <DockPanel Grid.Column="1">
-          <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedSummary}" FontWeight="SemiBold" Margin="0,0,0,8" />
+          <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedSummary}" FontWeight="SemiBold" Margin="0,0,0,4" />
+          <TextBlock DockPanel.Dock="Top" Text="{Binding ProblemsText}" IsVisible="{Binding HasProblems}"
+                     TextWrapping="Wrap" Foreground="{DynamicResource ErrorBrush}" Margin="0,0,0,8" />
           <ScrollViewer>
             <ItemsControl ItemsSource="{Binding Tracks}">
               <ItemsControl.ItemTemplate>
                 <DataTemplate x:DataType="vm:TrackItemViewModel">
-                  <Grid ColumnDefinitions="Auto,32,*,70,80" Margin="0,2,18,2">
-                    <CheckBox Grid.Column="0" IsChecked="{Binding IsIncluded}" />
+                  <Grid ColumnDefinitions="Auto,32,*,70,80,Auto" Margin="0,2,18,2">
+                    <CheckBox Grid.Column="0" IsChecked="{Binding IsIncluded}" IsCheckedChanged="OnIncludeChanged" />
                     <TextBlock Grid.Column="1" Text="{Binding Number}" VerticalAlignment="Center"
                                Foreground="{DynamicResource MutedTextBrush}" />
                     <TextBox Grid.Column="2" Text="{Binding Title}" Margin="0,0,8,0" />
@@ -113,6 +120,11 @@
                                HorizontalAlignment="Right" Foreground="{DynamicResource MutedTextBrush}" />
                     <TextBlock Grid.Column="4" Text="{Binding SizeText}" VerticalAlignment="Center"
                                HorizontalAlignment="Right" Foreground="{DynamicResource MutedTextBrush}" />
+                    <StackPanel Grid.Column="5" Orientation="Horizontal" Spacing="2" Margin="8,0,0,0"
+                                IsVisible="{Binding CanReorder}">
+                      <Button Content="▲" Click="OnMoveUp" Padding="6,2" />
+                      <Button Content="▼" Click="OnMoveDown" Padding="6,2" />
+                    </StackPanel>
                   </Grid>
                 </DataTemplate>
               </ItemsControl.ItemTemplate>

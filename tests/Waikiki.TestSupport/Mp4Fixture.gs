@@ -127,7 +127,9 @@ class Mp4Fixture {
         }
 
         /// Builds ftyp + mdat + moov. Chapter durations are in milliseconds.
-        func Build(title string?, chapterTitles []string, chapterMs []int32, style ChapterStyle, cover []?uint8) []uint8 {
+        func Build(title string?, chapterTitles []string, chapterMs []int32, style ChapterStyle, cover []?uint8) []uint8 -> Build(title, chapterTitles, chapterMs, style, cover, 0, 0)
+
+        func Build(title string?, chapterTitles []string, chapterMs []int32, style ChapterStyle, cover []?uint8, trackNumber int32, discNumber int32) []uint8 {
             let ftyp = Box("ftyp", Latin1("M4B "), U32(0), Latin1("M4B "), Latin1("isom"))
             let audio = AudioBytes()
             var text = []uint8{}
@@ -188,6 +190,12 @@ class Mp4Fixture {
                 ilstBody = Concat(ilstBody, TextItem("©nam", t))
             }
             ilstBody = Concat(ilstBody, TextItem("©ART", "Test Author"), TextItem("©alb", "Test Album"))
+            if trackNumber > 0 {
+                ilstBody = Concat(ilstBody, Item("trkn", 0, Concat(U16(0), U16(trackNumber), U16(12), U16(0))))
+            }
+            if discNumber > 0 {
+                ilstBody = Concat(ilstBody, Item("disk", 0, Concat(U16(0), U16(discNumber), U16(2))))
+            }
             if let c = cover {
                 ilstBody = Concat(ilstBody, Item("covr", 13, c))
             }

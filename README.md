@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE) [![](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-blue)](http://dot.net/) [![](https://img.shields.io/badge/language-G%23-blue)](http://github.com/DavidObando/gsharp/)
 
-Waikiki is a desktop app for Windows, macOS and Linux that creates [Yoto](https://yotoplay.com) playlists (MYO cards) for kids from audiobooks and, later, music. It talks directly to Yoto's API.
+Waikiki is a desktop app for Windows, macOS and Linux that creates [Yoto](https://yotoplay.com) playlists (MYO cards) for kids from audiobooks and music folders. It talks directly to Yoto's API.
 
-> **Status: early.** The audiobook flow works in the desktop app (milestones M0 to M4); packaging and music playlists are still to come. See [docs/SPEC.md](docs/SPEC.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status: early.** Audiobooks and music folders both work in the desktop app, and signed macOS builds come from CI. See [docs/SPEC.md](docs/SPEC.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Run it
 ```
@@ -21,12 +21,12 @@ Builds are produced by GitHub Actions for macOS (arm64, x64), Windows (x64, arm6
 ```
 The macOS builds from CI are signed with a Developer ID certificate and notarized by Apple (when the signing secrets are configured); a locally built macOS app is ad-hoc signed and runs on the machine that built it. The Windows and Linux builds are not signed, and Windows SmartScreen may warn on first run.
 
-## Planned features
+## Features
 - Import an unencrypted `.m4b` audiobook, such as one produced by [Oahu](https://github.com/DavidObando/Oahu).
 - Split it by chapter, losslessly where possible, into Yoto-compatible tracks.
 - Extract the book's cover art and use it as the playlist image.
 - Upload the tracks and create or update the card on your Yoto account.
-- Music playlists from a folder of audio files (after the audiobook flow).
+- Music playlists from a folder of audio files (mp3, m4a, aac, wav, flac, ogg, opus), one track per file, with tags, cover art and reordering.
 - Single Avalonia GUI app. No CLI.
 
 ## Tech

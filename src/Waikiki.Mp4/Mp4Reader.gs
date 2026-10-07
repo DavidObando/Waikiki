@@ -222,6 +222,18 @@ class Mp4Reader {
                     info.Cover = CoverArt(CoverArt.Sniff(bytes), bytes)
                     continue
                 }
+                if item.Type == "trkn" || item.Type == "disk" {
+                    // 2 reserved bytes, then the number (16 bits) and the total (16 bits).
+                    if data.End - start >= 4 {
+                        let n = int32(ByteReader.U16(buf, start + 2))
+                        if item.Type == "trkn" {
+                            info.TrackNumber = n
+                        } else {
+                            info.DiscNumber = n
+                        }
+                    }
+                    continue
+                }
                 let text = Encoding.UTF8.GetString(buf, start, data.End - start)
                 switch item.Type {
                     case "©nam" { info.Title = text }

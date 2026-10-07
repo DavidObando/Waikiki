@@ -14,7 +14,7 @@ import Waikiki.Yoto
 import Xunit
 
 class Env {
-    init(dir string, handler FakeHandler, job UploadJob, project AudiobookProject, states JobStateStore) {
+    init(dir string, handler FakeHandler, job UploadJob, project PlaylistProject, states JobStateStore) {
         Dir = dir
         Handler = handler
         Job = job
@@ -37,7 +37,7 @@ class Env {
         init;
     }
 
-    prop Project AudiobookProject {
+    prop Project PlaylistProject {
         get;
         init;
     }
@@ -84,7 +84,7 @@ class UploadJobTests {
             let client = YotoClient(options, http, YotoAuth(options, http, store))
             let states = JobStateStore(Path.Combine(dir, "jobs"))
             let job = UploadJob(client, states, Path.Combine(dir, "tmp"))
-            let project = AudiobookProject.Open(file, SplitOptions())
+            let project = PlaylistProject.OpenAudiobook(file, SplitOptions())
             project.IconMediaId = "ICON"
             return Env(dir, handler, job, project, states)
         }

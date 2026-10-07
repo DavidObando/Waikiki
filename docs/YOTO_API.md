@@ -74,3 +74,17 @@ Confirmed with the opt-in `LiveTests`:
 - Failure detection: a transcode is failed when `transcode.failedUploadSha256` is set, even though the HTTP status stays 202.
 
 Still untested: whether `metadata.media` is required on `POST /content` (we always send it), exact per-track/per-card limits, and the behavior of multipart icon uploads.
+
+## Audio formats (M6 spike, 2026-10-07)
+Uploading 4-second test tones with `PUT {uploadUrl}` and the content type below, Yoto transcoded all of these (to Opus) with the right duration, so music files can be uploaded untouched:
+
+| Extension | Content-Type sent | Result |
+|---|---|---|
+| `.mp3` | `audio/mpeg` | OK |
+| `.m4a` | `audio/mp4` | OK |
+| `.aac` (ADTS) | `audio/aac` | OK |
+| `.wav` | `audio/wav` | OK |
+| `.flac` | `audio/flac` | OK |
+| `.opus` | `audio/ogg` | OK |
+
+Yoto does not document these formats; they are empirical. Ogg Vorbis (`.ogg`) is accepted by Waikiki on the assumption that Yoto's decoder handles it, but was not tested (the local ffmpeg has no Vorbis encoder). A live run with a four-track MP3 folder (tags, embedded cover) created, listed and deleted a card successfully.

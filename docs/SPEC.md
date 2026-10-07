@@ -12,7 +12,7 @@ Non-goals:
 - No CLI.
 - No Audible access, DRM or decryption. Use Oahu to produce the `.m4b` first.
 - No Yoto device control or family-library scopes.
-- Music playlists are not in v1.
+- Music playlists are not in v1. (Added later as M6; see below.)
 
 ## 2. User flow
 1. Sign in to Yoto (browser, PKCE).
@@ -44,6 +44,9 @@ Repo files: `Waikiki.slnx`, `Directory.Packages.props` (versions aligned with Oa
 
 ## 5. Yoto integration
 Sequential: upload URL, PUT, poll for `transcodedSha256`, then `POST /content` referencing `yoto:#<sha>`. Cover and icons are separate uploads. Retries are idempotent by file SHA; 429 handled with backoff. Job state is persisted so an interrupted upload can resume.
+
+## 5a. Music playlists (M6)
+Choose a folder of audio files (mp3, m4a, aac, wav, flac, ogg, opus; one level, hidden files skipped). Each file becomes one chapter with one track and is uploaded untouched, since Yoto transcodes everything itself. Titles come from ID3/M4A tags or the file name (leading track numbers stripped); order is by disc and track number when every file has one, otherwise by natural file name, and can be changed in the review list. The card title is the shared album tag, else the folder name. The cover is embedded art, then a `cover`/`folder`/`front` image in the folder, then one the user picks. A card holds at most 100 tracks and about 100 MB per track (consumer guidance), enforced before upload. Re-running on the same folder updates the same card.
 
 ## 6. Auth and security
 - PKCE with loopback redirect. The `client_id` is a public identifier, not a secret: Waikiki ships with a built-in app registration (`YotoClientIds.BuiltIn`), overridable by the Settings value or the `WAIKIKI_YOTO_CLIENT_ID` environment variable (in that order). If Yoto answers `invalid_client` / `unauthorized_client` (or "unknown client"), the app says the registration was rejected and opens Settings so the user can supply their own. Changing the client ID signs the user out, because tokens belong to a client.

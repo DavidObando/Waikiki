@@ -4,6 +4,7 @@ import Avalonia.Media.Imaging
 import CommunityToolkit.Mvvm.ComponentModel
 import CommunityToolkit.Mvvm.Input
 import System
+import System.Collections.Generic
 import System.Collections.ObjectModel
 import System.Diagnostics
 import System.IO
@@ -11,6 +12,7 @@ import System.Net.Http
 import System.Threading
 import System.Threading.Tasks
 import Waikiki.Core
+import Waikiki.Core.Music
 import Waikiki.Core.Storage
 import Waikiki.Mp4
 import Waikiki.Yoto
@@ -20,7 +22,7 @@ partial class MainWindowViewModel : ObservableObject {
     private let settingsStore AppSettingsStore
     private var settings AppSettings = AppSettings()
     private var session YotoSession? = nil
-    private var project AudiobookProject? = nil
+    private var project PlaylistProject? = nil
     private var cts CancellationTokenSource? = nil
 
     init() {
@@ -74,6 +76,10 @@ partial class MainWindowViewModel : ObservableObject {
     @ObservableProperty
     private var selectedSummary string = ""
 
+    /// Why the current selection cannot be uploaded (Yoto's limits); empty when it can.
+    @ObservableProperty
+    private var problemsText string = ""
+
     // Work in progress
     @ObservableProperty
     private var isBusy bool
@@ -93,7 +99,9 @@ partial class MainWindowViewModel : ObservableObject {
     prop HasError bool -> errorText.Length > 0
     prop HasResult bool -> resultUrl.Length > 0
     prop AccountText string -> if IsSignedIn { "Signed in to Yoto" } else { "Not signed in" }
-    prop CanUpload bool -> HasProject && IsSignedIn && !IsBusy
+    prop CanUpload bool -> HasProject && IsSignedIn && !IsBusy && !HasProblems
+    prop HasProblems bool -> problemsText.Length > 0
+    prop IsMusic bool -> project != nil && !project!!.IsAudiobook
     prop CanSignIn bool -> !IsSignedIn && !IsBusy
     prop CanOpenBook bool -> !IsBusy
 
@@ -105,6 +113,8 @@ partial class MainWindowViewModel : ObservableObject {
         OnPropertyChanged("CanUpload")
         OnPropertyChanged("CanSignIn")
         OnPropertyChanged("CanOpenBook")
+        OnPropertyChanged("HasProblems")
+        OnPropertyChanged("IsMusic")
     }
 
     async func InitializeAsync() {
@@ -126,7 +136,11 @@ partial class MainWindowViewModel : ObservableObject {
         await ConfigureSessionAsync()
         RefreshDerived()
         if let path = StartupPath {
-            await OpenBookAsync(path)
+            if Directory.Exists(path) {
+                await OpenMusicFolderAsync(path)
+            } else {
+                await OpenBookAsync(path)
+            }
         }
     }
 
@@ -235,32 +249,56 @@ partial class MainWindowViewModel : ObservableObject {
 
     /// Opens an audiobook file and shows its chapters and cover for review.
     async func OpenBookAsync(path string) {
+        await ShowProjectAsync("Reading ${Path.GetFileName(path)}...", () -> PlaylistProject.OpenAudiobook(path, SplitOptions()), path)
+    }
+
+    /// Opens a folder of music files and shows its tracks and cover for review.
+    async func OpenMusicFolderAsync(path string) {
+        await ShowProjectAsync("Reading ${Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar))}...", () -> PlaylistProject.OpenMusicFolder(path), path)
+    }
+
+    private async func ShowProjectAsync(status string, create () -> PlaylistProject, path string) {
         ErrorText = ""
         ResultUrl = ""
         IsBusy = true
-        StatusText = "Reading ${Path.GetFileName(path)}..."
+        StatusText = status
         RefreshDerived()
         try {
-            let opened = await Task.Run[AudiobookProject](() -> AudiobookProject.Open(path, SplitOptions()))
+            let opened = await Task.Run[PlaylistProject](create)
             project = opened
             CardTitle = opened.CardTitle
             Tracks.Clear()
             var number = 1
             for t in opened.Tracks {
-                Tracks.Add(TrackItemViewModel(number, t))
+                Tracks.Add(TrackItemViewModel(number, t, !opened.IsAudiobook))
                 number++
             }
             CoverImage = LoadCover(opened.Cover)
-            let author = opened.Info.Artist
-            BookSummary = "${if author != nil { author + " · " } else { "" }}${Formatting.Duration(opened.Info.Duration)} · ${opened.Tracks.Count} tracks" +
-                if opened.Info.HasEmbeddedChapters { "" } else { " (no chapters found; split by length)" }
+            let artist = opened.Artist
+            let known = opened.KnownDuration
+            let parts = List[string]()
+            if artist != nil {
+                parts.Add(artist!!)
+            }
+            if known != nil {
+                parts.Add(Formatting.Duration(known!!))
+            }
+            parts.Add("${opened.Tracks.Count} tracks")
+            var summary = string.Join(" · ", parts)
+            if opened.IsAudiobook && !opened.AudiobookInfo!!.HasEmbeddedChapters {
+                summary = summary + " (no chapters found; split by length)"
+            }
+            if !opened.IsAudiobook && known == nil {
+                summary = summary + " (Yoto shows exact lengths after upload)"
+            }
+            BookSummary = summary
             HasProject = true
             UpdateSelectedSummary()
             StatusText = ""
-            settings.LastFolder = Path.GetDirectoryName(path)
+            settings.LastFolder = if Directory.Exists(path) { path } else { Path.GetDirectoryName(path) }
             await settingsStore.SaveAsync(settings)
         } catch (e Exception) {
-            ErrorText = "Could not open that file: ${e.Message}"
+            ErrorText = "Could not open that: ${e.Message}"
             StatusText = ""
         } finally {
             IsBusy = false
@@ -268,16 +306,61 @@ partial class MainWindowViewModel : ObservableObject {
         }
     }
 
+    /// Replaces the cover with an image chosen by the user.
+    func SetCoverFromFile(path string) {
+        guard let p = project else {
+            return
+        }
+        try {
+            let cover = CoverFile.Load(path)
+            p.Cover = cover
+            CoverImage = LoadCover(cover)
+            ErrorText = ""
+        } catch (e Exception) {
+            ErrorText = "Could not use that image: ${e.Message}"
+        }
+        RefreshDerived()
+    }
+
+    /// Moves a music track up (-1) or down (+1) in the card's order.
+    func MoveTrack(item TrackItemViewModel, delta int32) {
+        let from = Tracks.IndexOf(item)
+        let to = from + delta
+        if from < 0 || to < 0 || to >= Tracks.Count {
+            return
+        }
+        Tracks.Move(from, to)
+        var number = 1
+        for t in Tracks {
+            t.Number = number
+            number++
+        }
+    }
+
+    /// Recomputes the selection summary and the limit warnings.
     func UpdateSelectedSummary() {
+        guard let p = project else {
+            return
+        }
         var count = 0
         var seconds = 0.0
+        var unknown = false
         for t in Tracks {
+            t.Commit()
             if t.IsIncluded {
                 count++
-                seconds = seconds + t.Track.Segment.Duration.TotalSeconds
+                if let d = t.Track.Duration {
+                    seconds = seconds + d.TotalSeconds
+                } else {
+                    unknown = true
+                }
             }
         }
-        SelectedSummary = "${count} of ${Tracks.Count} tracks selected · ${Formatting.Duration(TimeSpan.FromSeconds(seconds))}"
+        let length = if unknown { "" } else { " · ${Formatting.Duration(TimeSpan.FromSeconds(seconds))}" }
+        SelectedSummary = "${count} of ${Tracks.Count} tracks selected${length}"
+        let problems = p.Problems()
+        ProblemsText = string.Join(" ", problems)
+        RefreshDerived()
     }
 
     @RelayCommand
@@ -293,8 +376,11 @@ partial class MainWindowViewModel : ObservableObject {
             RefreshDerived()
             return
         }
+        // The review list is the source of truth for titles, inclusion and order.
+        p.Tracks.Clear()
         for t in Tracks {
             t.Commit()
+            p.Tracks.Add(t.Track)
         }
         p.CardTitle = if string.IsNullOrWhiteSpace(CardTitle) { p.CardTitle } else { CardTitle.Trim() }
         ErrorText = ""
@@ -307,7 +393,7 @@ partial class MainWindowViewModel : ObservableObject {
         try {
             if p.IconMediaId == nil {
                 try {
-                    p.IconMediaId = IconCatalog.PickDefault(await s.GetPublicIconsAsync(cts!!.Token))
+                    p.IconMediaId = IconCatalog.PickDefault(await s.GetPublicIconsAsync(cts!!.Token), p.IconTags)
                 } catch (e HttpRequestException) {
                     // Cards still work without an icon pick; Yoto shows its default.
                     p.IconMediaId = nil
