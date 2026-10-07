@@ -1,0 +1,119 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Waikiki.App.ViewModels"
+        x:Class="Waikiki.App.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        x:CompileBindings="True"
+        Title="Waikiki"
+        Width="980" Height="720" MinWidth="720" MinHeight="520">
+
+  <DockPanel>
+
+    <!-- Header -->
+    <Border DockPanel.Dock="Top" Padding="16,12"
+            Background="{DynamicResource HeaderBackgroundBrush}"
+            BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Grid.Column="0" VerticalAlignment="Center">
+          <TextBlock Text="Waikiki" FontSize="20" FontWeight="SemiBold" />
+          <TextBlock Text="Turn audiobooks into Yoto cards" FontSize="12"
+                     Foreground="{DynamicResource MutedTextBrush}" />
+        </StackPanel>
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+          <TextBlock Text="{Binding AccountText}" VerticalAlignment="Center"
+                     Foreground="{DynamicResource MutedTextBrush}" />
+          <Button Content="Sign in to Yoto" Command="{Binding SignInCommand}"
+                  IsVisible="{Binding !IsSignedIn}" IsEnabled="{Binding CanSignIn}" Classes="accent" />
+          <Button Content="Sign out" Command="{Binding SignOutCommand}"
+                  IsVisible="{Binding IsSignedIn}" IsEnabled="{Binding CanOpenBook}" />
+          <Button Content="Settings" Command="{Binding ToggleSettingsCommand}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Footer -->
+    <Border DockPanel.Dock="Bottom" Padding="16,10"
+            BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,1,0,0">
+      <StackPanel Spacing="8">
+        <TextBlock Text="{Binding ErrorText}" IsVisible="{Binding HasError}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource ErrorBrush}" />
+        <TextBlock Text="{Binding StatusText}" Foreground="{DynamicResource MutedTextBrush}" />
+        <ProgressBar Value="{Binding Progress}" Minimum="0" Maximum="1" Height="8"
+                     IsVisible="{Binding IsBusy}" />
+        <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right">
+          <Button Content="Open in Yoto" Command="{Binding OpenCardCommand}" IsVisible="{Binding HasResult}" />
+          <Button Content="Choose another book..." Click="OnChooseFile" IsEnabled="{Binding CanOpenBook}"
+                  IsVisible="{Binding HasProject}" />
+          <Button Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding IsBusy}" />
+          <Button Content="Upload to Yoto" Command="{Binding UploadCommand}" IsEnabled="{Binding CanUpload}"
+                  IsVisible="{Binding HasProject}" Classes="accent" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Settings panel -->
+    <Border DockPanel.Dock="Top" Padding="16,12" IsVisible="{Binding IsSettingsOpen}"
+            BorderBrush="{DynamicResource HeaderBorderBrush}" BorderThickness="0,0,0,1">
+      <StackPanel Spacing="8" MaxWidth="640" HorizontalAlignment="Left">
+        <TextBlock Text="Yoto client ID" FontWeight="SemiBold" />
+        <TextBox Text="{Binding ClientId}" Watermark="Paste the client ID from dashboard.yoto.dev" />
+        <TextBlock TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}"
+                   Text="Register an app at dashboard.yoto.dev, add http://127.0.0.1:8787/callback as its redirect URI, and enable the content and icon scopes." />
+        <Button Content="Save" Command="{Binding SaveClientIdCommand}" HorizontalAlignment="Left" Classes="accent" />
+        <TextBlock Text="Where your Yoto login is kept" FontWeight="SemiBold" Margin="0,8,0,0" />
+        <TextBlock Text="{Binding StoreDescription}" TextWrapping="Wrap" />
+        <TextBlock IsVisible="{Binding StoreIsPlainFile}" TextWrapping="Wrap"
+                   Foreground="{DynamicResource ErrorBrush}"
+                   Text="No operating-system secret store was found, so the login is kept in a file only you can read, without encryption." />
+      </StackPanel>
+    </Border>
+
+    <!-- Main content -->
+    <Grid>
+      <!-- No book yet -->
+      <StackPanel IsVisible="{Binding !HasProject}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+        <TextBlock Text="Choose an audiobook to get started" FontSize="18" HorizontalAlignment="Center" />
+        <TextBlock Text="An unprotected .m4b file, for example one exported by Oahu." HorizontalAlignment="Center"
+                   Foreground="{DynamicResource MutedTextBrush}" />
+        <Button Content="Choose audiobook..." Click="OnChooseFile" IsEnabled="{Binding CanOpenBook}"
+                HorizontalAlignment="Center" Classes="accent" />
+      </StackPanel>
+
+      <!-- Book review -->
+      <Grid IsVisible="{Binding HasProject}" ColumnDefinitions="280,*" Margin="16">
+        <StackPanel Grid.Column="0" Spacing="10" Margin="0,0,16,0">
+          <Border BorderBrush="{DynamicResource CardBorderBrush}" BorderThickness="1" CornerRadius="6"
+                  ClipToBounds="True" Width="256" Height="256" HorizontalAlignment="Left">
+            <Image Source="{Binding CoverImage}" Stretch="UniformToFill" />
+          </Border>
+          <TextBlock Text="Card title" FontWeight="SemiBold" />
+          <TextBox Text="{Binding CardTitle}" />
+          <TextBlock Text="{Binding BookSummary}" TextWrapping="Wrap" Foreground="{DynamicResource MutedTextBrush}" />
+        </StackPanel>
+
+        <DockPanel Grid.Column="1">
+          <TextBlock DockPanel.Dock="Top" Text="{Binding SelectedSummary}" FontWeight="SemiBold" Margin="0,0,0,8" />
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding Tracks}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:TrackItemViewModel">
+                  <Grid ColumnDefinitions="Auto,32,*,70,80" Margin="0,2,18,2">
+                    <CheckBox Grid.Column="0" IsChecked="{Binding IsIncluded}" />
+                    <TextBlock Grid.Column="1" Text="{Binding Number}" VerticalAlignment="Center"
+                               Foreground="{DynamicResource MutedTextBrush}" />
+                    <TextBox Grid.Column="2" Text="{Binding Title}" Margin="0,0,8,0" />
+                    <TextBlock Grid.Column="3" Text="{Binding DurationText}" VerticalAlignment="Center"
+                               HorizontalAlignment="Right" Foreground="{DynamicResource MutedTextBrush}" />
+                    <TextBlock Grid.Column="4" Text="{Binding SizeText}" VerticalAlignment="Center"
+                               HorizontalAlignment="Right" Foreground="{DynamicResource MutedTextBrush}" />
+                  </Grid>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </DockPanel>
+      </Grid>
+    </Grid>
+
+  </DockPanel>
+</Window>

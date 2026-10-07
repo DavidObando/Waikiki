@@ -3,6 +3,7 @@
     <Project Path="src/Waikiki.Mp4/Waikiki.Mp4.gsproj" Type="C#" />
     <Project Path="src/Waikiki.Yoto/Waikiki.Yoto.gsproj" Type="C#" />
     <Project Path="src/Waikiki.Core/Waikiki.Core.gsproj" Type="C#" />
+    <Project Path="src/Waikiki.App/Waikiki.App.gsproj" Type="C#" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Waikiki.TestSupport/Waikiki.TestSupport.gsproj" Type="C#" />

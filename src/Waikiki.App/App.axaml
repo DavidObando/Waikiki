@@ -1,0 +1,35 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="Waikiki.App.App"
+             RequestedThemeVariant="Default">
+
+  <Application.Styles>
+    <FluentTheme />
+  </Application.Styles>
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#F8FAFC" />
+          <SolidColorBrush x:Key="HeaderBorderBrush" Color="#E2E8F0" />
+          <SolidColorBrush x:Key="MutedTextBrush" Color="#64748B" />
+          <SolidColorBrush x:Key="CardBorderBrush" Color="#D1D5DB" />
+          <SolidColorBrush x:Key="ErrorBrush" Color="#DC2626" />
+          <SolidColorBrush x:Key="SuccessBrush" Color="#16A34A" />
+          <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#FEF3C7" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="HeaderBackgroundBrush" Color="#1E293B" />
+          <SolidColorBrush x:Key="HeaderBorderBrush" Color="#334155" />
+          <SolidColorBrush x:Key="MutedTextBrush" Color="#94A3B8" />
+          <SolidColorBrush x:Key="CardBorderBrush" Color="#475569" />
+          <SolidColorBrush x:Key="ErrorBrush" Color="#EF4444" />
+          <SolidColorBrush x:Key="SuccessBrush" Color="#22C55E" />
+          <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#422006" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+</Application>

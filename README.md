@@ -4,7 +4,13 @@
 
 Waikiki is a desktop app for Windows, macOS and Linux that creates [Yoto](https://yotoplay.com) playlists (MYO cards) for kids from audiobooks and, later, music. It talks directly to Yoto's API.
 
-> **Status: planning.** There is no runnable app yet. See [docs/SPEC.md](docs/SPEC.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+> **Status: early.** The audiobook flow works in the desktop app (milestones M0 to M4); packaging and music playlists are still to come. See [docs/SPEC.md](docs/SPEC.md) and [docs/ROADMAP.md](docs/ROADMAP.md).
+
+## Run it
+```
+dotnet run --project src/Waikiki.App
+```
+On first launch, open Settings and enter your Yoto client ID, then sign in. Your login is stored in the macOS Keychain, Windows DPAPI or the Linux Secret Service when available.
 
 ## Planned features
 - Import an unencrypted `.m4b` audiobook, such as one produced by [Oahu](https://github.com/DavidObando/Oahu).
