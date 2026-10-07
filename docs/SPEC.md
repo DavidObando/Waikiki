@@ -49,16 +49,16 @@ Sequential: upload URL, PUT, poll for `transcodedSha256`, then `POST /content` r
 - PKCE with loopback redirect. The `client_id` is a public identifier, not a secret: Waikiki ships with a built-in app registration (`YotoClientIds.BuiltIn`), overridable by the Settings value or the `WAIKIKI_YOTO_CLIENT_ID` environment variable (in that order). If Yoto answers `invalid_client` / `unauthorized_client` (or "unknown client"), the app says the registration was rejected and opens Settings so the user can supply their own. Changing the client ID signs the user out, because tokens belong to a client.
 - Scopes: `user:content:manage offline_access` (+ `user:icons:manage` if required).
 - Refresh tokens are single-use: write atomically.
-- Store tokens in the OS keychain (macOS Keychain, Windows Credential Manager, libsecret). Never log tokens.
+- Store tokens through `ITokenStore`: macOS Keychain, Windows DPAPI or the Linux Secret Service, falling back to a user-only file (Settings shows which is active). Never log tokens.
 
 ## 7. Packaging
-Self-contained per-OS builds modelled on Oahu's `build/` scripts and `build-clients.yml`. Signing and notarization come later.
+Self-contained per-OS builds modelled on Oahu's `build/` scripts and workflow. macOS builds in CI are signed with a Developer ID certificate and notarized; Windows and Linux builds are unsigned.
 
 ## 8. Testing
 Small generated `.m4b` fixtures (no copyrighted audio), parser and splitter unit tests, Yoto client tests with a fake handler, UI smoke test, manual end-to-end against a real account.
 
 ## 9. Risks and open questions
-- Why the whole-`.m4b` upload failed (M0).
+- Resolved in M0: the whole-`.m4b` upload failed because Yoto rejects files over its size and duration limits, so tracks are split per chapter.
 - Writing a correct MP4 muxer is the biggest engineering risk; keep it audio-only and minimal.
 - Yoto limits and several API details are unconfirmed (see [YOTO_API.md](YOTO_API.md)); rate limits unpublished.
 - G# is pre-1.0; Avalonia plus CommunityToolkit works in Oahu, so risk is low.
