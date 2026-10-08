@@ -1,0 +1,27 @@
+<Project>
+  <!--
+    The G# SDK renders assembly attributes from @(AssemblyAttribute), but it never runs the standard
+    GetAssemblyVersion step that Nerdbank.GitVersioning hooks into, so no version attributes would be
+    emitted (assemblies report 1.0.0). Run NBGV's GetBuildVersion and stamp them here. Each attribute is
+    only added if nothing else already provides it.
+  -->
+  <Target Name="_WaikikiStampVersionAttributes"
+          DependsOnTargets="GetBuildVersion"
+          BeforeTargets="CreateGeneratedAssemblyInfoInputsCacheFile;_GsharpGenerateAssemblyInfo"
+          Condition=" '$(GenerateAssemblyInfo)' == 'true' ">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyVersionAttribute"
+                         Condition=" '@(AssemblyAttribute->WithMetadataValue('Identity', 'System.Reflection.AssemblyVersionAttribute'))' == '' ">
+        <_Parameter1>$(AssemblyVersion)</_Parameter1>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyFileVersionAttribute"
+                         Condition=" '@(AssemblyAttribute->WithMetadataValue('Identity', 'System.Reflection.AssemblyFileVersionAttribute'))' == '' ">
+        <_Parameter1>$(AssemblyFileVersion)</_Parameter1>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyInformationalVersionAttribute"
+                         Condition=" '@(AssemblyAttribute->WithMetadataValue('Identity', 'System.Reflection.AssemblyInformationalVersionAttribute'))' == '' ">
+        <_Parameter1>$(AssemblyInformationalVersion)</_Parameter1>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+</Project>

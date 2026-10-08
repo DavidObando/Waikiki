@@ -1,7 +1,15 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="Waikiki.App.App"
+             Name="Waikiki"
              RequestedThemeVariant="Default">
+
+  <!-- On macOS this becomes the app menu: it replaces Avalonia's default "About Avalonia" with our own. -->
+  <NativeMenu.Menu>
+    <NativeMenu>
+      <NativeMenuItem Header="About Waikiki" Click="OnAboutClick" />
+    </NativeMenu>
+  </NativeMenu.Menu>
 
   <Application.Styles>
     <FluentTheme />
