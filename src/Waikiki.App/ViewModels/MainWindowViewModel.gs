@@ -27,7 +27,11 @@ partial class MainWindowViewModel : ObservableObject {
 
     init() {
         let overrideDir = Environment.GetEnvironmentVariable("WAIKIKI_DATA_DIR")
-        appData = if string.IsNullOrEmpty(overrideDir) { AppPaths.AppData() } else { overrideDir!! }
+        appData = if string.IsNullOrEmpty(overrideDir) {
+            AppPaths.AppData()
+        } else {
+            overrideDir!!
+        }
         settingsStore = AppSettingsStore(AppPaths.SettingsFile(appData))
     }
 
@@ -98,7 +102,11 @@ partial class MainWindowViewModel : ObservableObject {
 
     prop HasError bool -> errorText.Length > 0
     prop HasResult bool -> resultUrl.Length > 0
-    prop AccountText string -> if IsSignedIn { "Signed in to Yoto" } else { "Not signed in" }
+    prop AccountText string -> if IsSignedIn {
+        "Signed in to Yoto"
+    } else {
+        "Not signed in"
+    }
     prop CanUpload bool -> HasProject && IsSignedIn && !IsBusy && !HasProblems
     prop HasProblems bool -> problemsText.Length > 0
     prop IsMusic bool -> project != nil && !project!!.IsAudiobook
@@ -146,7 +154,10 @@ partial class MainWindowViewModel : ObservableObject {
 
     /// The client ID in effect: Settings override, then the environment variable, then the built-in ID.
     private func ResolveClientId() ResolvedClientId {
-        return YotoClientIds.Resolve(settings.ClientId, Environment.GetEnvironmentVariable(YotoClientIds.EnvironmentVariable))
+        return YotoClientIds.Resolve(
+            settings.ClientId,
+            Environment.GetEnvironmentVariable(YotoClientIds.EnvironmentVariable)
+        )
     }
 
     private async func ConfigureSessionAsync() {
@@ -177,7 +188,11 @@ partial class MainWindowViewModel : ObservableObject {
         }
         let before = ResolveClientId().ClientId
         let typed = ClientId.Trim()
-        settings.ClientId = if typed.Length == 0 { nil } else { typed }
+        settings.ClientId = if typed.Length == 0 {
+            nil
+        } else {
+            typed
+        }
         await settingsStore.SaveAsync(settings)
         ErrorText = ""
         if ResolveClientId().ClientId != before {
@@ -216,14 +231,23 @@ partial class MainWindowViewModel : ObservableObject {
         RefreshDerived()
         cts = CancellationTokenSource(TimeSpan.FromMinutes(5.0))
         try {
-            await s.SignInAsync((url string) -> { Browser.Open(url) }, cts!!.Token)
+            await s.SignInAsync(
+                (url string) -> {
+                    Browser.Open(url)
+                },
+                cts!!.Token
+            )
             IsSignedIn = true
             StatusText = "Signed in."
         } catch (e OperationCanceledException) {
             StatusText = "Sign-in timed out or was canceled."
             ErrorText = ClientHint
         } catch (e YotoAuthException) {
-            ErrorText = if e.IsClientRejected { ClientRejectedMessage() } else { "Sign-in failed: ${e.Message}. ${ClientHint}" }
+            ErrorText = if e.IsClientRejected {
+                ClientRejectedMessage()
+            } else {
+                "Sign-in failed: ${e.Message}. ${ClientHint}"
+            }
             IsSettingsOpen = e.IsClientRejected
             StatusText = ""
         } catch (e Exception) {
@@ -249,15 +273,23 @@ partial class MainWindowViewModel : ObservableObject {
 
     /// Opens an audiobook file and shows its chapters and cover for review.
     async func OpenBookAsync(path string) {
-        await ShowProjectAsync("Reading ${Path.GetFileName(path)}...", () -> PlaylistProject.OpenAudiobook(path, SplitOptions()), path)
+        await ShowProjectAsync(
+            "Reading ${Path.GetFileName(path)}...",
+            () -> PlaylistProject.OpenAudiobook(path, SplitOptions()),
+            path
+        )
     }
 
     /// Opens a folder of music files and shows its tracks and cover for review.
     async func OpenMusicFolderAsync(path string) {
-        await ShowProjectAsync("Reading ${Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar))}...", () -> PlaylistProject.OpenMusicFolder(path), path)
+        await ShowProjectAsync(
+            "Reading ${Path.GetFileName(path.TrimEnd(Path.DirectorySeparatorChar))}...",
+            () -> PlaylistProject.OpenMusicFolder(path),
+            path
+        )
     }
 
-    private async func ShowProjectAsync(status string, create () -> PlaylistProject, path string) {
+    private async func ShowProjectAsync(status string, create() -> PlaylistProject, path string) {
         ErrorText = ""
         ResultUrl = ""
         IsBusy = true
@@ -281,7 +313,7 @@ partial class MainWindowViewModel : ObservableObject {
                 parts.Add(artist)
             }
             if known != nil {
-                parts.Add(Formatting.Duration(known!!))
+                parts.Add(Formatting.Duration(known))
             }
             parts.Add("${opened.Tracks.Count} tracks")
             var summary = string.Join(" · ", parts)
@@ -295,7 +327,11 @@ partial class MainWindowViewModel : ObservableObject {
             HasProject = true
             UpdateSelectedSummary()
             StatusText = ""
-            settings.LastFolder = if Directory.Exists(path) { path } else { Path.GetDirectoryName(path) }
+            settings.LastFolder = if Directory.Exists(path) {
+                path
+            } else {
+                Path.GetDirectoryName(path)
+            }
             await settingsStore.SaveAsync(settings)
         } catch (e Exception) {
             ErrorText = "Could not open that: ${e.Message}"
@@ -356,7 +392,11 @@ partial class MainWindowViewModel : ObservableObject {
                 }
             }
         }
-        let length = if unknown { "" } else { " · ${Formatting.Duration(TimeSpan.FromSeconds(seconds))}" }
+        let length = if unknown {
+            ""
+        } else {
+            " · ${Formatting.Duration(TimeSpan.FromSeconds(seconds))}"
+        }
         SelectedSummary = "${count} of ${Tracks.Count} tracks selected${length}"
         let problems = p.Problems()
         ProblemsText = string.Join(" ", problems)
@@ -382,7 +422,11 @@ partial class MainWindowViewModel : ObservableObject {
             t.Commit()
             p.Tracks.Add(t.Track)
         }
-        p.CardTitle = if string.IsNullOrWhiteSpace(CardTitle) { p.CardTitle } else { CardTitle.Trim() }
+        p.CardTitle = if string.IsNullOrWhiteSpace(CardTitle) {
+            p.CardTitle
+        } else {
+            CardTitle.Trim()
+        }
         ErrorText = ""
         ResultUrl = ""
         Progress = 0.0
@@ -404,10 +448,12 @@ partial class MainWindowViewModel : ObservableObject {
                 JobStateStore(AppPaths.JobsDirectory(appData)),
                 Path.Combine(Path.GetTempPath(), "Waikiki")
             )
-            let reporter = System.Progress[JobProgress]((r JobProgress) -> {
-                Progress = r.Fraction
-                StatusText = r.Message
-            })
+            let reporter = System.Progress[JobProgress](
+                (r JobProgress) -> {
+                    Progress = r.Fraction
+                    StatusText = r.Message
+                }
+            )
             let cardId = await job.RunAsync(p, reporter, cts!!.Token)
             ResultUrl = "https://my.yotoplay.com/card/${cardId}/edit"
             StatusText = "Done. Your card is on your Yoto account."
