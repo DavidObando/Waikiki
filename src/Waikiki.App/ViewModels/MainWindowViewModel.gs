@@ -278,7 +278,7 @@ partial class MainWindowViewModel : ObservableObject {
             let known = opened.KnownDuration
             let parts = List[string]()
             if artist != nil {
-                parts.Add(artist!!)
+                parts.Add(artist)
             }
             if known != nil {
                 parts.Add(Formatting.Duration(known!!))

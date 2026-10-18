@@ -1,10 +1,14 @@
 # Waikiki
 
+![](docs/screenshot.png?raw=true)
+
 ### [⬇ Download the latest version](https://github.com/DavidObando/Waikiki/releases/latest)
 
 **Waikiki turns audiobooks and music from your computer into playlists for your Yoto player.** Pick a book or a folder of songs, press one button, and it appears in your Yoto account, ready to put on a card. It works on Mac, Windows and Linux.
 
 Waikiki is a free hobby project. It is not made by or affiliated with Yoto.
+
+Please support your artists by purchasing their content, this tool is just a utility to make it easy to enjoy content in the Yoto devices.
 
 ---
 

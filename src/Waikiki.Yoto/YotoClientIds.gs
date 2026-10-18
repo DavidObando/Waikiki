@@ -37,10 +37,10 @@ class YotoClientIds {
         /// Settings value first (an explicit choice in the app), then the environment variable, then the built-in ID.
         func Resolve(settingsValue string?, environmentValue string?) ResolvedClientId {
             if !string.IsNullOrWhiteSpace(settingsValue) {
-                return ResolvedClientId(settingsValue!!.Trim(), ClientIdSource.Settings)
+                return ResolvedClientId(settingsValue.Trim(), ClientIdSource.Settings)
             }
             if !string.IsNullOrWhiteSpace(environmentValue) {
-                return ResolvedClientId(environmentValue!!.Trim(), ClientIdSource.Environment)
+                return ResolvedClientId(environmentValue.Trim(), ClientIdSource.Environment)
             }
             return ResolvedClientId(BuiltIn, ClientIdSource.BuiltIn)
         }

@@ -9,7 +9,11 @@ import Xunit
 
 class TokenStoreTests {
     shared {
-        private func Tokens() TokenSet -> TokenSet("ACCESS-SECRET", "REFRESH-SECRET", DateTimeOffset.FromUnixTimeSeconds(1791428269))
+        private func Tokens() TokenSet -> TokenSet(
+            "ACCESS-SECRET",
+            "REFRESH-SECRET",
+            DateTimeOffset.FromUnixTimeSeconds(1791428269)
+        )
     }
 
     @Fact
@@ -46,7 +50,11 @@ class TokenStoreTests {
     async func Keychain_Missing_Item_Is_Null_And_Other_Errors_Throw() {
         let runner = FakeRunner()
         let store = KeychainTokenStore(runner, "Waikiki", "yoto")
-        runner.Enqueue(44, "", "security: SecKeychainSearchCopyNext: The specified item could not be found in the keychain.")
+        runner.Enqueue(
+            44,
+            "",
+            "security: SecKeychainSearchCopyNext: The specified item could not be found in the keychain."
+        )
         Assert.Null(await store.LoadAsync())
         runner.Enqueue(1, "", "boom")
         await Assert.ThrowsAsync[InvalidOperationException](() -> store.LoadAsync())
@@ -56,7 +64,11 @@ class TokenStoreTests {
     async func Keychain_Write_Errors_Are_Surfaced() {
         let runner = FakeRunner()
         let store = KeychainTokenStore(runner, "Waikiki", "yoto")
-        runner.Enqueue(0, "", "security: SecKeychainItemCreateFromContent (<default>): User interaction is not allowed.")
+        runner.Enqueue(
+            0,
+            "",
+            "security: SecKeychainItemCreateFromContent (<default>): User interaction is not allowed."
+        )
         await Assert.ThrowsAsync[InvalidOperationException](() -> store.SaveAsync(Tokens()))
     }
 
@@ -127,7 +139,11 @@ class TokenStoreTests {
         }
         try {
             Assert.Null(await s.LoadAsync())
-            let tokens = TokenSet("a\"b'c $$x `y` \\ é", "r-é-\"quoted\"", DateTimeOffset.FromUnixTimeSeconds(1791428269))
+            let tokens = TokenSet(
+                "a\"b'c $$x `y` \\ é",
+                "r-é-\"quoted\"",
+                DateTimeOffset.FromUnixTimeSeconds(1791428269)
+            )
             await s.SaveAsync(tokens)
             let loaded = await s.LoadAsync()
             Assert.Equal(tokens.AccessToken, loaded!!.AccessToken)

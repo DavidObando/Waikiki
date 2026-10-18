@@ -16,8 +16,8 @@ partial class App : Application {
         AvaloniaXamlLoader.Load(this)
     }
 
-    /// The app version from the assembly (for example "0.1.14"), without the git hash Nerdbank.GitVersioning appends.
     shared {
+        /// The app version from the assembly (for example "0.1.14"), without the git hash Nerdbank.GitVersioning appends.
         func VersionText() string {
             let assembly = Assembly.GetEntryAssembly() ?? typeof(App).Assembly
             let attribute = assembly.GetCustomAttribute[AssemblyInformationalVersionAttribute]()
